@@ -3,7 +3,7 @@ set -e
 
 pushd integration_tests/
 
-bsdtar -xzf teamcity_data.tar.gz
+tar -xzf teamcity_data.tar.gz
 
 docker-compose up -d
 
