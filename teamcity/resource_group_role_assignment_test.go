@@ -12,19 +12,19 @@ import (
 )
 
 func TestAccGroupRoleAssignmentAssign_SysAdmin(t *testing.T) {
-	var g api.GroupRoleAssignmentReference
+	var r api.RoleAssignmentReference
 	resName := "teamcity_group_role_assignment.test_group_1_sys_admin_global"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckGroupDestroy,
+		CheckDestroy: testAccCheckGroupRoleAssignmentDestroy,
 
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccGroupRoleAssignmentConfigSysAdmin,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGroupRoleAssignmentExists(resName, &g),
+					testAccCheckGroupRoleAssignmentExists(resName, &r),
 					resource.TestCheckResourceAttr(resName, "group_key", generateKey("Test Group #1")),
 					resource.TestCheckResourceAttr(resName, "role_id", "SYSTEM_ADMIN"),
 					resource.TestCheckResourceAttr(resName, "project_id", "g"),
@@ -35,19 +35,19 @@ func TestAccGroupRoleAssignmentAssign_SysAdmin(t *testing.T) {
 }
 
 func TestAccGroupRoleAssignmentAssign_ProjDev(t *testing.T) {
-	var g api.GroupRoleAssignmentReference
+	var r api.RoleAssignmentReference
 	resName := "teamcity_group_role_assignment.test_group_2_project_dev_test_project"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
-		CheckDestroy: testAccCheckGroupDestroy,
+		CheckDestroy: testAccCheckGroupRoleAssignmentDestroy,
 
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccGroupRoleAssignmentConfigProjDev,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGroupRoleAssignmentExists(resName, &g),
+					testAccCheckGroupRoleAssignmentExists(resName, &r),
 					resource.TestCheckResourceAttr(resName, "group_key", generateKey("Test Group #2")),
 					resource.TestCheckResourceAttr(resName, "role_id", "PROJECT_DEVELOPER"),
 					resource.TestCheckResourceAttr(resName, "project_id", "p:TestProject"),
@@ -69,7 +69,7 @@ func groupRoleAssignmentDestroyHelper(s *terraform.State, client *api.Client) er
 		}
 
 		groupRoleAssignment, _ := createGroupRoleAssignmentFromResourceData(r.Primary.ID)
-		_, err := client.GroupRoleAssignments.Get(groupRoleAssignment)
+		_, err := client.RoleAssignments.GetForGroup(groupRoleAssignment)
 
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {
@@ -83,14 +83,14 @@ func groupRoleAssignmentDestroyHelper(s *terraform.State, client *api.Client) er
 	return nil
 }
 
-func testAccCheckGroupRoleAssignmentExists(n string, out *api.GroupRoleAssignmentReference) resource.TestCheckFunc {
+func testAccCheckGroupRoleAssignmentExists(n string, out *api.RoleAssignmentReference) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		client := testAccProvider.Meta().(*api.Client)
 		return groupRoleAssignmentExistsHelper(n, s, client, out)
 	}
 }
 
-func groupRoleAssignmentExistsHelper(n string, s *terraform.State, client *api.Client, out *api.GroupRoleAssignmentReference) error {
+func groupRoleAssignmentExistsHelper(n string, s *terraform.State, client *api.Client, out *api.RoleAssignmentReference) error {
 	rs, ok := s.RootModule().Resources[n]
 	if !ok {
 		return fmt.Errorf("Not found: %s", n)
@@ -101,7 +101,7 @@ func groupRoleAssignmentExistsHelper(n string, s *terraform.State, client *api.C
 	}
 
 	groupRoleAssignment, _ := createGroupRoleAssignmentFromResourceData(rs.Primary.ID)
-	resp, err := client.GroupRoleAssignments.Get(groupRoleAssignment)
+	resp, err := client.RoleAssignments.GetForGroup(groupRoleAssignment)
 
 	if err != nil {
 		return fmt.Errorf("Received an error retrieving Groups: %s", err)

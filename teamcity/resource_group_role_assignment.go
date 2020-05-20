@@ -58,7 +58,7 @@ func resourceGroupRoleAssignmentCreate(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	_, err = client.GroupRoleAssignments.Assign(newGroupRoleAssignment)
+	_, err = client.RoleAssignments.AssignToGroup(newGroupRoleAssignment)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func resourceGroupRoleAssignmentRead(d *schema.ResourceData, meta interface{}) e
 		return err
 	}
 
-	dt, err := client.GroupRoleAssignments.Get(newGroupRoleAssignment)
+	dt, err := client.RoleAssignments.GetForGroup(newGroupRoleAssignment)
 	if err != nil {
 		if strings.Contains(err.Error(), "404") {
 			d.SetId("")
@@ -106,7 +106,7 @@ func resourceGroupRoleAssignmentDelete(d *schema.ResourceData, meta interface{})
 		return err
 	}
 
-	return client.GroupRoleAssignments.Unassign(newGroupRoleAssignment)
+	return client.RoleAssignments.UnassignFromGroup(newGroupRoleAssignment)
 }
 
 func resourceGroupRoleAssignmentImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
