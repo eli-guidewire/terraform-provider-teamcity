@@ -2,17 +2,13 @@ package teamcity_test
 
 import (
 	"fmt"
-	"strings"
-	"testing"
-
+	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
+	"strings"
+	"testing"
 	"hash/crc32"
 	"regexp"
-
-	"github.com/cvbarros/go-teamcity/teamcity"
-	api "github.com/cvbarros/go-teamcity/teamcity"
 )
 
 func TestAccGroupCreate_Basic(t *testing.T) {
@@ -76,7 +72,7 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 	resName := "teamcity_group.test_group"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCreateGroupFirst(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckGroupDestroy,
 
@@ -84,7 +80,7 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 			resource.TestStep{
 				Config: TestAccGroupConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGroupExists(resName, &g),
+					testAccCheckGroupExistsCreateFirst(resName, &g),
 					resource.TestCheckResourceAttr(resName, "key", generateKey("test-group")),
 					resource.TestCheckResourceAttr(resName, "name", "test-group"),
 					resource.TestCheckResourceAttr(resName, "description", "Description of test group"),
@@ -94,12 +90,65 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 	})
 }
 
-func testAccPreCheckCreateGroupFirst(t *testing.T) {
-	testAccPreCheck(t)
-	newGroup, _ := teamcity.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
-	client := testAccProvider.Meta().(*api.Client)
-	client.Groups.Create(newGroup)
+//func testAccPreCheckCreateGroupFirst(t *testing.T) {
+//	t.Log("\nDoing normal precheck\n")
+//	testAccPreCheck(t)
+//	newGroup, _ := api.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
+//
+//	var c *api.Client
+//	if c == nil {
+//		t.Log("\nClient is nil\n")
+//	}
+//
+//	c.Groups.Create(newGroup)
+//
+//
+//}
+
+func testAccCheckGroupExistsCreateFirst(n string, out *api.Group) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*api.Client)
+
+		newGroup, _ := api.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
+		client.Groups.Create(newGroup)
+		fmt.Sprintf("Made new group: %s", newGroup.Key)
+
+		return groupExistsHelper(n, s, client, out)
+	}
 }
+
+//func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
+//	var g api.Group
+//	resName := "teamcity_group.test_group"
+//
+//	resource.Test(t, resource.TestCase{
+//		PreCheck:     func() { testAccPreCheckCreateGroupFirst(t) },
+//		Providers:    testAccProviders,
+//		CheckDestroy: testAccCheckGroupDestroy,
+//
+//		Steps: []resource.TestStep{
+//			resource.TestStep{
+//				Config: TestAccGroupConfigBasic,
+//				Check: resource.ComposeTestCheckFunc(
+//					testAccCheckGroupExists(resName, &g),
+//					resource.TestCheckResourceAttr(resName, "key", generateKey("test-group")),
+//					resource.TestCheckResourceAttr(resName, "name", "test-group"),
+//					resource.TestCheckResourceAttr(resName, "description", "Description of test group"),
+//				),
+//			},
+//		},
+//	})
+//}
+
+//func testAccPreCheckCreateGroupFirst(t *testing.T) {
+//	testAccPreCheck(t)
+//	newGroup, _ := teamcity.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
+//	if api.Client == nil {
+//		fmt.Sprintf("=============================api client is nil=======================")
+//	}
+//	client := testAccProvider.Meta().(*api.Client)
+//	client.Groups.Create(newGroup)
+//}
 
 func generateKey(name string) string {
 	reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
