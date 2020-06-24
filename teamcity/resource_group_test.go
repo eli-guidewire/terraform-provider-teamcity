@@ -2,17 +2,14 @@ package teamcity_test
 
 import (
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
-
+	api "github.com/cvbarros/go-teamcity/teamcity"
 	"hash/crc32"
 	"regexp"
-
-	"github.com/cvbarros/go-teamcity/teamcity"
-	api "github.com/cvbarros/go-teamcity/teamcity"
 )
 
 func TestAccGroupCreate_Basic(t *testing.T) {
@@ -76,7 +73,7 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 	resName := "teamcity_group.test_group"
 
 	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { testAccPreCheckCreateGroupFirst(t) },
+		PreCheck:     func() { testAccPreCheck(t) },
 		Providers:    testAccProviders,
 		CheckDestroy: testAccCheckGroupDestroy,
 
@@ -84,7 +81,7 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 			resource.TestStep{
 				Config: TestAccGroupConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGroupExists(resName, &g),
+					testAccCheckGroupExistsCreateFirst(resName, &g),
 					resource.TestCheckResourceAttr(resName, "key", generateKey("test-group")),
 					resource.TestCheckResourceAttr(resName, "name", "test-group"),
 					resource.TestCheckResourceAttr(resName, "description", "Description of test group"),
@@ -94,11 +91,16 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 	})
 }
 
-func testAccPreCheckCreateGroupFirst(t *testing.T) {
-	testAccPreCheck(t)
-	newGroup, _ := teamcity.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
-	client := testAccProvider.Meta().(*api.Client)
-	client.Groups.Create(newGroup)
+func testAccCheckGroupExistsCreateFirst(n string, out *api.Group) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		client := testAccProvider.Meta().(*api.Client)
+
+		newGroup, _ := api.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
+		client.Groups.Create(newGroup)
+		fmt.Sprintf("Made new group: %s", newGroup.Key)
+
+		return groupExistsHelper(n, s, client, out)
+	}
 }
 
 func generateKey(name string) string {
