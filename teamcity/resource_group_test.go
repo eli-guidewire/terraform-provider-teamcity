@@ -69,8 +69,7 @@ func TestAccGroupCreate_BasicUpdate(t *testing.T) {
 }
 
 func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
-	var g api.Group
-	resName := "teamcity_group.test_group"
+	resName := "teamcity_group.all_users_group"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -79,28 +78,15 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: TestAccGroupConfigBasic,
+				Config: TestAccGroupConfigAllUsers,
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckGroupExistsCreateFirst(resName, &g),
-					resource.TestCheckResourceAttr(resName, "key", generateKey("test-group")),
-					resource.TestCheckResourceAttr(resName, "name", "test-group"),
-					resource.TestCheckResourceAttr(resName, "description", "Description of test group"),
+					resource.TestCheckResourceAttr(resName, "key", "ALL_USERS_GROUP"),
+					resource.TestCheckResourceAttr(resName, "name", "All Users"),
+					resource.TestCheckResourceAttr(resName, "description", "Contains all TeamCity users"),
 				),
 			},
 		},
 	})
-}
-
-func testAccCheckGroupExistsCreateFirst(n string, out *api.Group) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		client := testAccProvider.Meta().(*api.Client)
-
-		newGroup, _ := api.NewGroup(generateKey("test-group"), "test-group", "Description of test group")
-		client.Groups.Create(newGroup)
-		fmt.Sprintf("Made new group: %s", newGroup.Key)
-
-		return groupExistsHelper(n, s, client, out)
-	}
 }
 
 func generateKey(name string) string {
@@ -172,5 +158,12 @@ const TestAccGroupConfigBasicUpdate = `
 resource "teamcity_group" "test_group" {
   name = "test-group-updated"
   description = "Updated description of test group"
+}
+`
+const TestAccGroupConfigAllUsers = `
+resource "teamcity_group" "all_users_group" {
+  key = "ALL_USERS_GROUP"
+  name = "All Users"
+  description = "Contains all TeamCity users"
 }
 `
