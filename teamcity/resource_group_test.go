@@ -69,7 +69,7 @@ func TestAccGroupCreate_BasicUpdate(t *testing.T) {
 	})
 }
 
-func TestAccExistingGroupImport(t *testing.T) {
+func TestAccExistingGroupImport_withExceptionOnConflict(t *testing.T) {
 	resName := "teamcity_group.test_group"
 	groupName := "test-group"
 	testGroupKey := generateKey(groupName)
@@ -85,6 +85,32 @@ func TestAccExistingGroupImport(t *testing.T) {
 		Steps: []resource.TestStep{
 			resource.TestStep{
 				Config: TestAccGroupConfigBasic,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resName, "key", testGroupKey),
+					resource.TestCheckResourceAttr(resName, "name", groupName),
+					resource.TestCheckResourceAttr(resName, "description", groupDescription),
+				),
+				ExpectError: regexp.MustCompile(".*group with the same key already exists.*"),
+			},
+		},
+	})
+}
+
+func TestAccExistingGroupImport_withoutExceptionOnConflict(t *testing.T) {
+	resName := "teamcity_group.test_group"
+	groupName := "test-group"
+	testGroupKey := generateKey(groupName)
+	groupDescription := "Description of test group"
+	createGroup(testGroupKey, groupName, groupDescription)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccCheckGroupDestroy,
+
+		Steps: []resource.TestStep{
+			resource.TestStep{
+				Config: TestAccGroupConfigBasicImport,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resName, "key", testGroupKey),
 					resource.TestCheckResourceAttr(resName, "name", groupName),
@@ -173,5 +199,12 @@ const TestAccGroupConfigBasicUpdate = `
 resource "teamcity_group" "test_group" {
   name = "test-group-updated"
   description = "Updated description of test group"
+}
+`
+const TestAccGroupConfigBasicImport = `
+resource "teamcity_group" "test_group" {
+  name = "test-group"
+  description = "Description of test group"
+  import_on_conflict = true
 }
 `

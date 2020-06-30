@@ -36,6 +36,12 @@ func resourceGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
+			"import_on_conflict": {
+				Type:     schema.TypeBool,
+				Optional: true,
+				ForceNew: true,
+				Default:  false,
+			},
 		},
 	}
 }
@@ -43,6 +49,7 @@ func resourceGroup() *schema.Resource {
 func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var key, name, description string
+	var import_on_conflict bool
 
 	if v, ok := d.GetOk("key"); ok {
 		key = v.(string)
@@ -54,6 +61,10 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if v, ok := d.GetOk("description"); ok {
 		description = v.(string)
+	}
+
+	if v, ok := d.GetOk("import_on_conflict"); ok {
+		import_on_conflict = v.(bool)
 	}
 
 	if key == "" {
@@ -73,15 +84,18 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	created, err := client.Groups.Create(newGroup)
 
 	// Code change
-	if err != nil && !strings.Contains(err.Error(), "group with the same key already exists") {
-		return err
+	if err != nil {
+		if import_on_conflict && strings.Contains(err.Error(), "group with the same key already exists") {
+			d.MarkNewResource()
+			d.SetId(key)
+		} else {
+			return err
+		}
 	}
 
 	d.MarkNewResource()
 	if created != nil {
 		d.SetId(created.Key)
-	} else {
-		d.SetId(key)
 	}
 
 	return resourceGroupRead(d, meta)
