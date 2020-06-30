@@ -72,13 +72,6 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 
 	created, err := client.Groups.Create(newGroup)
 
-	// Before
-	//if err != nil {
-	//	return err
-	//}
-	//d.MarkNewResource()
-	//d.SetId(created.Key)
-
 	// Code change
 	if err != nil && !strings.Contains(err.Error(), "group with the same key already exists") {
 		return err
