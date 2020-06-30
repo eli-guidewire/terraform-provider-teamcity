@@ -82,21 +82,17 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.Groups.Create(newGroup)
-
-	// Code change
+	id := created.Key
 	if err != nil {
 		if import_on_conflict && strings.Contains(err.Error(), "group with the same key already exists") {
-			d.MarkNewResource()
-			d.SetId(key)
+			id = key
 		} else {
 			return err
 		}
 	}
 
 	d.MarkNewResource()
-	if created != nil {
-		d.SetId(created.Key)
-	}
+	d.SetId(id)
 
 	return resourceGroupRead(d, meta)
 }
