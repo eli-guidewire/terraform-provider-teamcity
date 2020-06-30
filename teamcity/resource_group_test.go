@@ -13,7 +13,7 @@ import (
 	"regexp"
 )
 
-func TestAccGroupCreate_Basic(t *testing.T) {
+func TestAccGroup_Create(t *testing.T) {
 	var g api.Group
 	resName := "teamcity_group.test_group"
 
@@ -36,7 +36,7 @@ func TestAccGroupCreate_Basic(t *testing.T) {
 	})
 }
 
-func TestAccGroupCreate_BasicUpdate(t *testing.T) {
+func TestAccGroup_Update(t *testing.T) {
 	var g api.Group
 	resName := "teamcity_group.test_group"
 
@@ -69,7 +69,7 @@ func TestAccGroupCreate_BasicUpdate(t *testing.T) {
 	})
 }
 
-func TestAccExistingGroupImport_withExceptionOnConflict(t *testing.T) {
+func TestAccGroup_DisallowImportOnCreate(t *testing.T) {
 	resName := "teamcity_group.test_group"
 	groupName := "test-group"
 	testGroupKey := generateKey(groupName)
@@ -96,7 +96,7 @@ func TestAccExistingGroupImport_withExceptionOnConflict(t *testing.T) {
 	})
 }
 
-func TestAccExistingGroupImport_withoutExceptionOnConflict(t *testing.T) {
+func TestAccGroup_AllowImportOnCreate(t *testing.T) {
 	resName := "teamcity_group.test_group"
 	groupName := "test-group"
 	testGroupKey := generateKey(groupName)
@@ -205,6 +205,6 @@ const TestAccGroupConfigBasicImport = `
 resource "teamcity_group" "test_group" {
   name = "test-group"
   description = "Description of test group"
-  import_on_conflict = true
+  import_if_exists = true
 }
 `

@@ -5,7 +5,6 @@ import (
 	"hash/crc32"
 	"regexp"
 	"strings"
-	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -37,7 +36,7 @@ func resourceGroup() *schema.Resource {
 				Optional: true,
 				ForceNew: true,
 			},
-			"import_on_conflict": {
+			"import_if_exists": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				ForceNew: true,
@@ -50,7 +49,7 @@ func resourceGroup() *schema.Resource {
 func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*api.Client)
 	var key, name, description string
-	var import_on_conflict bool
+	var import_if_exists bool
 
 	if v, ok := d.GetOk("key"); ok {
 		key = v.(string)
@@ -64,8 +63,8 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 		description = v.(string)
 	}
 
-	if v, ok := d.GetOk("import_on_conflict"); ok {
-		import_on_conflict = v.(bool)
+	if v, ok := d.GetOk("import_if_exists"); ok {
+		import_if_exists = v.(bool)
 	}
 
 	if key == "" {
@@ -83,7 +82,7 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.Groups.Create(newGroup)
-	if err != nil && !(import_on_conflict && strings.Contains(err.Error(), "group with the same key already exists")){
+	if err != nil && !(import_if_exists && strings.Contains(err.Error(), "group with the same key already exists")){
 		return err
 	}
 
