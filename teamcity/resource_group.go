@@ -5,6 +5,7 @@ import (
 	"hash/crc32"
 	"regexp"
 	"strings"
+	"log"
 
 	api "github.com/cvbarros/go-teamcity/teamcity"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
@@ -82,17 +83,16 @@ func resourceGroupCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	created, err := client.Groups.Create(newGroup)
-	id := created.Key
-	if err != nil {
-		if import_on_conflict && strings.Contains(err.Error(), "group with the same key already exists") {
-			id = key
-		} else {
-			return err
-		}
+	if err != nil && !(import_on_conflict && strings.Contains(err.Error(), "group with the same key already exists")){
+		return err
 	}
 
-	d.MarkNewResource()
-	d.SetId(id)
+	if created != nil {
+		d.MarkNewResource()
+		d.SetId(created.Key)
+	} else {
+		d.SetId(key)
+	}
 
 	return resourceGroupRead(d, meta)
 }
