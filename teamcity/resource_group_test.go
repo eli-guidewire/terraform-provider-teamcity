@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -68,8 +69,13 @@ func TestAccGroupCreate_BasicUpdate(t *testing.T) {
 	})
 }
 
-func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
-	resName := "teamcity_group.all_users_group"
+func TestAccExistingGroupImport(t *testing.T) {
+	resName := "teamcity_group.test_group"
+	groupName := "test-group"
+	testGroupKey := generateKey(groupName)
+	groupDescription := "Description of test group"
+
+	createGroup(testGroupKey, groupName, groupDescription)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { testAccPreCheck(t) },
@@ -78,15 +84,24 @@ func TestAccGroupCreate_WithExistingGroups(t *testing.T) {
 
 		Steps: []resource.TestStep{
 			resource.TestStep{
-				Config: TestAccGroupConfigAllUsers,
+				Config: TestAccGroupConfigBasic,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(resName, "key", "ALL_USERS_GROUP"),
-					resource.TestCheckResourceAttr(resName, "name", "All Users"),
-					resource.TestCheckResourceAttr(resName, "description", "Contains all TeamCity users"),
+					resource.TestCheckResourceAttr(resName, "key", testGroupKey),
+					resource.TestCheckResourceAttr(resName, "name", groupName),
+					resource.TestCheckResourceAttr(resName, "description", groupDescription),
 				),
 			},
 		},
 	})
+}
+
+func createGroup(testGroupKey string, groupName string, groupDescription string) {
+	client, err := api.NewClient(api.BasicAuth("admin", "admin"), http.DefaultClient)
+	if err == nil {
+		newGroup, _ := api.NewGroup(testGroupKey, groupName, groupDescription)
+		client.Groups.Create(newGroup)
+		fmt.Sprintf("Made new group: %s", newGroup.Key)
+	}
 }
 
 func generateKey(name string) string {
@@ -158,12 +173,5 @@ const TestAccGroupConfigBasicUpdate = `
 resource "teamcity_group" "test_group" {
   name = "test-group-updated"
   description = "Updated description of test group"
-}
-`
-const TestAccGroupConfigAllUsers = `
-resource "teamcity_group" "all_users_group" {
-  key = "ALL_USERS_GROUP"
-  name = "All Users"
-  description = "Contains all TeamCity users"
 }
 `
